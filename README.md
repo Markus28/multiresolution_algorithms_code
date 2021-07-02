@@ -1,15 +1,14 @@
-# Multiscale Algorithms for Hybrid Imaging
-This repository contains all code of the bachelor's thesis "Multiscale Algorithms for Hybrid Imaging".
+# Multiresolution Algorithms for Hybrid Imaging
+This repository contains all code of the bachelor's thesis "Multiresolution Algorithms for Hybrid Imaging".
 All of the Python code requires the scientific python suite, i.e. numpy, scipy, matplotlib.
 
 As referenced in the thesis, we provide an animation of the energy intensity as an acoustical wave propagates through an illuminated optical medium:
 
-![forward problems](https://i.imgur.com/vcWCTfL.gif)
-
+<img src="https://i.imgur.com/vcWCTfL.gif" width="50%">
 
 Also, we provide an animation of the multiscale image registration from the thesis:
 
-![image registration](https://i.imgur.com/N0KGhFN.gif)
+<img src="https://i.imgur.com/N0KGhFN.gif" width="50%">
 
 The code is organized like this:
 ## `/multiscale_illustration`
