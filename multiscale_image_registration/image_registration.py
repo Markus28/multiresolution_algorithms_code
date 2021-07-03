@@ -245,12 +245,13 @@ def animate(I0, I1, compositions, file_name = None):
 
 def compose_full(flows):
     compositions = np.zeros((len(flows)*(flows[0].shape[0] - 1) + 1, flows[0].shape[1]))
-    compositions[0:flows[0].shape[0]] = flows[0]
-    current_anchor = flows[0].shape[0] - 1
-    i = flows[0].shape[0]
-    for flow in flows[1:]:
-        for step in flow[1:]:
-            compositions[i] = np.interp(step, flow[0], compositions[current_anchor])
+    compositions[0] = flows[0][0]
+    current_anchor = 0
+    i = 1
+    for flow in flows:
+        for j in range(2, len(flow)+1):
+            part_flow = np.interp(flow[0], flow[-j], flow[-1])
+            compositions[i] = np.interp(part_flow, flow[0], compositions[current_anchor])
             i+=1
         current_anchor = i - 1
     return compositions
@@ -298,4 +299,5 @@ if __name__ == "__main__":
         plt.show()
 
         full_compositions = compose_full(flows)
+        print("Animating")
         animate(transformed_image, image, full_compositions, "morphing.mp4")
