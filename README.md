@@ -6,7 +6,7 @@ As referenced in the thesis, we provide an animation of the energy density as an
 
 <img src="https://i.imgur.com/vcWCTfL.gif" width="55%">
 
-Also, we provide an animation of the multiscale image registration from the thesis:
+Also, we provide an animation (looping GIF, but also available as mp4 in this repository) of the multiscale image registration from the thesis:
 
 <img src="https://i.imgur.com/D2gywgc.gif" width="55%">
 
