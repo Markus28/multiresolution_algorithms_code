@@ -8,7 +8,7 @@ As referenced in the thesis, we provide an animation of the energy density as an
 
 Also, we provide an animation (looping GIF, but also available as mp4 in this repository) of the multiscale image registration from the thesis:
 
-<img src="https://i.imgur.com/D2gywgc.gif" width="55%">
+<img src="https://i.imgur.com/CqxnuqZ.gif" width="55%">
 
 The code is organized like this:
 ## `/multiscale_illustration`

@@ -27,6 +27,8 @@ shape_functions ={0: lambda x: (2*np.abs(x)**3 - 3*np.abs(x)**2 + 1)*(np.abs(x) 
 shape_functions_der ={0: lambda x: np.sign(x)*(6*np.abs(x)**2 - 6*np.abs(x)),
                   1: lambda x: 3*np.abs(x)**2 - 4*np.abs(x) + 1,}
 
+shape_functions_der_der = {0: lambda x: 12*np.abs(x) - 6,
+                           1: lambda x: np.sign(x)*(6*np.abs(x) - 4)}
 
 class FiniteElementFunction:
     def __init__(self, n_t, n_x):
@@ -35,21 +37,7 @@ class FiniteElementFunction:
         self.parameters = np.zeros((n_t, n_x, 2))
         self.x_supports, self.dx = np.linspace(-0.000001, 1.000001, n_x, retstep=True)
         self.t_supports, self.dt = np.linspace(-0.000001, 1.000001, n_t, retstep=True)
-
-        self.l2_dict = {}
-
-        for i, j in product(range(0, 2), range(0, 2)):
-            shape_i = lambda t, x: t/self.dt*shape_functions[i](x/self.dx)
-            shape_j= lambda t, x: t/self.dt*shape_functions[j](x/self.dx)
-            shape_i_translate_t = lambda t, x: (self.dt - t)/self.dt*shape_functions[i](x/self.dx)
-            shape_i_translate_x = lambda t, x: t/self.dt*shape_functions[i]((self.dx - x)/self.dx)
-            shape_i_translate_tx = lambda t, x: (self.dt - t)/self.dt*shape_functions[i]((self.dx - x)/self.dx)
-            
-            self.l2_dict[i, j, 0, 0] = 2*dblquad(lambda t, x: shape_i(t, x)*shape_j(t, x), -self.dx, self.dx, 0, self.dt)[0]
-            self.l2_dict[i, j, 1, 0] = dblquad(lambda t, x: shape_i_translate_t(t, x)*shape_j(t, x), -self.dx, self.dx, 0, self.dt)[0]
-            self.l2_dict[i, j, 1, 1] = dblquad(lambda t, x: shape_i_translate_tx(t, x)*shape_j(t, x), -self.dx, self.dx, 0, self.dt)[0]
-            self.l2_dict[i, j, 0, 1] = 2*dblquad(lambda t, x: shape_i_translate_x(t, x)*shape_j(t, x), -self.dx, self.dx, 0, self.dt)[0]
-
+        
         self.flat_to_ind = {}
         self.ind_to_flat = {}
         counter = 0
@@ -75,14 +63,14 @@ class FiniteElementFunction:
         result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin-1, 0]*shape_functions[0]((x - self.x_supports[space_bin - 1])/self.dx)
         result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin, 0]*shape_functions[0]((x - self.x_supports[space_bin])/self.dx)
 
-        result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin-1, 1]*shape_functions[1]((x - self.x_supports[space_bin - 1])/self.dx)
-        result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin, 1]*shape_functions[1]((x - self.x_supports[space_bin])/self.dx)
+        result += self.dx*(t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin-1, 1]*shape_functions[1]((x - self.x_supports[space_bin - 1])/self.dx)
+        result += self.dx*(t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin, 1]*shape_functions[1]((x - self.x_supports[space_bin])/self.dx)
         
         result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin-1, 0]*shape_functions[0]((x - self.x_supports[space_bin - 1])/self.dx)
         result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin, 0]*shape_functions[0]((x - self.x_supports[space_bin])/self.dx)
 
-        result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin-1, 1]*shape_functions[1]((x - self.x_supports[space_bin - 1])/self.dx)
-        result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin, 1]*shape_functions[1]((x - self.x_supports[space_bin])/self.dx)
+        result += self.dx*(self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin-1, 1]*shape_functions[1]((x - self.x_supports[space_bin - 1])/self.dx)
+        result += self.dx*(self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin, 1]*shape_functions[1]((x - self.x_supports[space_bin])/self.dx)
         return result
 
     def derive(self, t, x):
@@ -98,14 +86,14 @@ class FiniteElementFunction:
         result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin-1, 0]*shape_functions_der[0]((x - self.x_supports[space_bin - 1])/self.dx)/self.dx
         result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin, 0]*shape_functions_der[0]((x - self.x_supports[space_bin])/self.dx)/self.dx
 
-        result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin-1, 1]*shape_functions_der[1]((x - self.x_supports[space_bin - 1])/self.dx)/self.dx
-        result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin, 1]*shape_functions_der[1]((x - self.x_supports[space_bin])/self.dx)/self.dx
+        result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin-1, 1]*shape_functions_der[1]((x - self.x_supports[space_bin - 1])/self.dx)
+        result += (t - self.t_supports[time_bin-1])/self.dt * self.parameters[time_bin, space_bin, 1]*shape_functions_der[1]((x - self.x_supports[space_bin])/self.dx)
         
         result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin-1, 0]*shape_functions_der[0]((x - self.x_supports[space_bin - 1])/self.dx)/self.dx
         result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin, 0]*shape_functions_der[0]((x - self.x_supports[space_bin])/self.dx)/self.dx
 
-        result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin-1, 1]*shape_functions_der[1]((x - self.x_supports[space_bin - 1])/self.dx)/self.dx
-        result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin, 1]*shape_functions_der[1]((x - self.x_supports[space_bin])/self.dx)/self.dx
+        result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin-1, 1]*shape_functions_der[1]((x - self.x_supports[space_bin - 1])/self.dx)
+        result += (self.t_supports[time_bin] - t)/self.dt * self.parameters[time_bin - 1, space_bin, 1]*shape_functions_der[1]((x - self.x_supports[space_bin])/self.dx)
         return result
 
     def l2_product(self, ind_i, ind_j):
@@ -121,39 +109,27 @@ class FiniteElementFunction:
             return 0.5*result
         return result
 
-    def compute_stiffness_matrix(self):
-        columns = []
-        rows = []
-        data = []
-        for ind_a, ind_b in product(self.ind_to_flat, self.ind_to_flat):
-            entry = self.l2_product(ind_a, ind_b)
-            if entry != 0:
-                columns.append(self.ind_to_flat[ind_a])
-                rows.append(self.ind_to_flat[ind_b])
-                data.append(entry)
-
-        self.stiffness_matrix = csc_matrix((data, (rows, columns)), shape = (len(self.ind_to_flat), len(self.ind_to_flat)))
-        
-
-
 
 
 class VelocityField(FiniteElementFunction):
     def __init__(self, n_t, n_x, N_t, N_x, I0):
         super().__init__(n_t, n_x)
-        self.I0 = I0
         self.flow_N_t = N_t
         self.flow_N_x = N_x
 
         self.flow_x_supports, self.flow_dx = np.linspace(0, 1, self.flow_N_x, retstep=True)
         self.flow_t_supports, self.flow_dt = np.linspace(0, 1, self.flow_N_t, retstep=True)
 
-        self.grad_I0 = np.zeros_like(self.I0)
-        self.grad_I0[1:-1] = (self.I0[2:] - self.I0[:-2])/(2*(len(self.I0) - 1))
-        self.grad_I0[0] = (self.I0[1] - self.I0[0])/(len(self.I0) - 1)
-        self.grad_I0[-1] = (self.I0[-2] - self.I0[-1])/(len(self.I0) - 1)
-        self.image_supports = np.linspace(0, 1, len(self.I0))
+        self.set_image(I0)
 
+    def set_image(self, I0):
+        self.I0 = I0
+        self.grad_I0 = np.zeros_like(self.I0)
+        self.grad_I0[1:-1] = (self.I0[2:] - self.I0[:-2])*(len(self.I0) - 1)/2
+        self.grad_I0[0] = (self.I0[1] - self.I0[0])*(len(self.I0) - 1)
+        self.grad_I0[-1] = (self.I0[-2] - self.I0[-1])*(len(self.I0) - 1)
+        self.image_supports = np.linspace(0, 1, len(self.I0))
+        
     def compute_flow(self):
         self.flow = rk4(self.flow_x_supports, self.flow_N_t, self.evaluate, hook = lambda x: np.clip(x, 0, 1))[1]
         self.transformed_grad_I0 = np.interp(self.flow[-1], image_supports, self.grad_I0)
@@ -164,8 +140,8 @@ class VelocityField(FiniteElementFunction):
     def frechet_derivative(self, df):
         expanded_ts = np.repeat(np.expand_dims(self.flow_t_supports, 1), self.flow_N_x, axis = 1)
         
-        return self.transformed_grad_I0 * self.mu[-1]*simps(1/self.mu * df.evaluate(expanded_ts, self.flow), axis = 0)
-
+        return self.transformed_grad_I0 * self.mu[-1]*simps(1/self.mu * df.evaluate(expanded_ts, self.flow), axis = 0)*self.dt
+        
     def frechet_adjoint(self, I):
         print("Adjoint")
         rhs = np.zeros(len(self.ind_to_flat))
@@ -178,11 +154,9 @@ class VelocityField(FiniteElementFunction):
             basis_element.parameters[ind] = 0
             rhs[self.ind_to_flat[ind]] = np.sum(img*I)/len(I)
         
-        result = spsolve(self.stiffness_matrix, rhs)
         reshaped = np.zeros_like(self.parameters)
         for ind in self.ind_to_flat:
-            reshaped[ind] = result[self.ind_to_flat[ind]]
-
+            reshaped[ind] = rhs[self.ind_to_flat[ind]]
         return reshaped
 
 
@@ -195,7 +169,6 @@ def ista_optimize(I0, I1, l, step_size, n_t, n_x, N_t):
     N_x = len(I0)
     image_supports = np.linspace(0, 1, len(I0))
     vel_field = VelocityField(n_t, n_x, N_t, N_x, I0)
-    vel_field.compute_stiffness_matrix()
     for _ in range(80):
         vel_field.compute_flow()
         vel_field.compute_mu()
@@ -258,9 +231,9 @@ def compose_full(flows):
 
 if __name__ == "__main__":
     n_t = 50
-    n_x = 5             #5
-    N_t = 100           #100
-    N_x = 100           #100
+    n_x = 25             #25
+    N_t = 200           #100
+    N_x = 200           #100
     start = 0
     image_supports = np.linspace(0, 1, N_x)
     image = np.sin(8*np.pi*image_supports**2)
@@ -268,17 +241,18 @@ if __name__ == "__main__":
     single = False
 
     if single:
-        vel_field = ista_optimize(transformed_image, image, 0., 0.005, n_t, n_x, N_t)
+        vel_field = ista_optimize(transformed_image, image, 0., 0.05, n_t, n_x, N_t)
         vel_field.compute_flow()
         plt.plot(vel_field.flow[-1])
         plt.plot(warp(image_supports))
         plt.show()
 
         print(f"Original L2 distance {np.sum((image - transformed_image)**2)}, now {np.sum((image - np.interp(vel_field.flow[-1], image_supports, transformed_image))**2)}")
-        plt.plot(np.interp(vel_field.flow[-1], image_supports, transformed_image))
+        plt.plot(image_supports, image)
+        plt.plot(image_supports, np.interp(vel_field.flow[-1], image_supports, transformed_image))
         plt.show()
     else:
-        flows = multiscale(transformed_image, image, (3.**(-np.arange(start, start+5))), 0.01, n_t, n_x, N_t)                    #0.01
+        flows = multiscale(transformed_image, image, (3.**(-np.arange(start, start+5))/20), 0.03, n_t, n_x, N_t)                    #0.01
         compositions = compose_flows(flows)
         fig, ax = plt.subplots(nrows = len(compositions) + 1)
         ax[0].plot(image_supports, image, label="$I_1$")
@@ -293,7 +267,7 @@ if __name__ == "__main__":
                 ax[i+1].legend(loc='upper right')
                 ax[i+1].xaxis.set_ticklabels([])
                 ax[i+1].yaxis.set_ticklabels([])
-                ax[i+1].set_ylabel(f"$\\lambda = 3^{i+start}$", rotation=0, labelpad=20)
+                ax[i+1].set_ylabel(f"$\\lambda = \\frac{{3^{i+start}}}{{20}}$", rotation=0, labelpad=20)
         fig.tight_layout()
         plt.savefig("multiscale_decomposition.pdf", dpi=1200, bbox_inches='tight')
         plt.show()
